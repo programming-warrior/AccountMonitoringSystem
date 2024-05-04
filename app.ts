@@ -30,24 +30,29 @@ wsApp.ws('/',verifyTokenSocket,(con,request)=>{
 
     if(request.userId && request.loginId && request.loginDetails && loginPools[request.userId]){
 
-        loginPools[request.userId][request.loginId]={con};
-
-        console.log(Object.keys(loginPools[request.userId]));
-
-        for(let key in loginPools[request.userId]){
-            if(key!=request.loginId){
-                let socketCon=loginPools[request.userId][key]['con'];
-                const data={
-                    "event":"new-login",
-                    "message":{
-                        userId:request.userId,
-                        loginId:request.loginId,
-                        loginDetails:request.loginDetails
+        if(loginPools[request.userId].hasOwnProperty(request.loginId)  && loginPools[request.userId][request.loginId]['con']){
+            loginPools[request.userId][request.loginId]['con']=con;
+        }
+        else{
+            loginPools[request.userId][request.loginId]={con};
+            for(let key in loginPools[request.userId]){
+                if(key!=request.loginId){
+                    let socketCon=loginPools[request.userId][key]['con'];
+                    const data={
+                        "event":"new-login",
+                        "message":{
+                            userId:request.userId,
+                            loginId:request.loginId,
+                            loginDetails:request.loginDetails
+                        }
                     }
+                    console.log(Object.keys(loginPools[request.userId]));
+                    socketCon.send(JSON.stringify(data));
                 }
-                socketCon.send(JSON.stringify(data));
             }
         }
+
+
 
         con.addEventListener('message',async(data)=>{
             if(request.userId){
@@ -62,16 +67,16 @@ wsApp.ws('/',verifyTokenSocket,(con,request)=>{
 
                     //delete the con from the loginPools
                     delete loginPools[request.userId][loginId];
-
+                    console.log(Object.keys(loginPools[request.userId]));
+                    
                     //broadcast this to all the devices
                     for(let key in loginPools[request.userId]){
                         loginPools[request.userId][key]['con'].send(JSON.stringify({event:'log-device-out',message:{loginId}}))
                     }
                 }
             }
-          
+            
         })
-           
 
     }
 

@@ -21,6 +21,47 @@ routes.get('/fetch/:id', (req, res) => __awaiter(void 0, void 0, void 0, functio
     const data = yield LoginDetailsModel_1.default.find({ userId: req.params.id });
     return res.status(200).json(data).end();
 }));
+routes.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    let email = req.body.email;
+    let password = req.body.password;
+    email = email && typeof (email) == 'string' && email.trim().length > 0 ? email : null;
+    password = password && typeof (password) == 'string' && password.trim().length > 0 ? password : null;
+    if (!email || !password)
+        return res.status(401).json({ message: "invalid request" }).end();
+    try {
+        const userFound = yield UserModel_1.default.findOne({ email }).exec();
+        if (userFound)
+            return res.status(401).json({ message: "user already exists" }).end();
+        const user = yield UserModel_1.default.create({ email, password });
+        const secretKey = process.env.SECRET_KEY || '';
+        let index = req.rawHeaders.findIndex(val => /sec-ch-ua-platform/i.test(val));
+        const platform = req.rawHeaders[index + 1];
+        index = req.rawHeaders.findIndex(val => /sec-ch-ua/i.test(val));
+        const browser = req.rawHeaders[index + 1].split(',')[1].split(';')[0];
+        const timeStamp = new Date();
+        const time = timeStamp.getHours() + "hrs " + timeStamp.getMinutes() + "mins";
+        const date = timeStamp.getFullYear() + "-" + timeStamp.getMonth() + "-" + timeStamp.getDay();
+        //store the login details into the database
+        const savedInfo = yield LoginDetailsModel_1.default.create({ userId: user._id.toString(), browser, platform, time, date });
+        const loginId = savedInfo._id;
+        const token = jsonwebtoken_1.default.sign({
+            userId: user._id.toString(),
+            loginId: loginId.toString(),
+            loginDetails: {
+                time,
+                date,
+                platform,
+                browser
+            }
+        }, secretKey);
+        return res.status(201).json({ message: { token, loginId: loginId.toString(), userId: user._id.toString() } }).end();
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).json({ message: "something went wrong" }).end();
+        return;
+    }
+}));
 routes.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let email = req.body.email;
     let password = req.body.password;

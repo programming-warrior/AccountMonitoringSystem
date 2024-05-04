@@ -35,7 +35,6 @@ wsApp.ws('/', token_1.default, (con, request) => {
         loginPools[request.userId] = {};
     if (request.userId && request.loginId && request.loginDetails && loginPools[request.userId]) {
         loginPools[request.userId][request.loginId] = { con };
-        console.log(Object.keys(loginPools[request.userId]));
         for (let key in loginPools[request.userId]) {
             if (key != request.loginId) {
                 let socketCon = loginPools[request.userId][key]['con'];
@@ -47,6 +46,7 @@ wsApp.ws('/', token_1.default, (con, request) => {
                         loginDetails: request.loginDetails
                     }
                 };
+                console.log(Object.keys(loginPools[request.userId]));
                 socketCon.send(JSON.stringify(data));
             }
         }
@@ -62,9 +62,10 @@ wsApp.ws('/', token_1.default, (con, request) => {
                     loggedOffDeviceCon.send(JSON.stringify({ event: 'log-yourself-out', message: {} }));
                     //delete the con from the loginPools
                     delete loginPools[request.userId][loginId];
+                    console.log(Object.keys(loginPools[request.userId]));
                     //broadcast this to all the devices
                     for (let key in loginPools[request.userId]) {
-                        loginPools[request.userId][key]['con'].send({ event: 'log-device-out', message: { loginId } });
+                        loginPools[request.userId][key]['con'].send(JSON.stringify({ event: 'log-device-out', message: { loginId } }));
                     }
                 }
             }
