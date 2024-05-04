@@ -34,20 +34,25 @@ wsApp.ws('/', token_1.default, (con, request) => {
     if (request.userId && !loginPools.hasOwnProperty(request.userId))
         loginPools[request.userId] = {};
     if (request.userId && request.loginId && request.loginDetails && loginPools[request.userId]) {
-        loginPools[request.userId][request.loginId] = { con };
-        for (let key in loginPools[request.userId]) {
-            if (key != request.loginId) {
-                let socketCon = loginPools[request.userId][key]['con'];
-                const data = {
-                    "event": "new-login",
-                    "message": {
-                        userId: request.userId,
-                        loginId: request.loginId,
-                        loginDetails: request.loginDetails
-                    }
-                };
-                console.log(Object.keys(loginPools[request.userId]));
-                socketCon.send(JSON.stringify(data));
+        if (loginPools[request.userId].hasOwnProperty(request.loginId) && loginPools[request.userId][request.loginId]['con']) {
+            loginPools[request.userId][request.loginId]['con'] = con;
+        }
+        else {
+            loginPools[request.userId][request.loginId] = { con };
+            for (let key in loginPools[request.userId]) {
+                if (key != request.loginId) {
+                    let socketCon = loginPools[request.userId][key]['con'];
+                    const data = {
+                        "event": "new-login",
+                        "message": {
+                            userId: request.userId,
+                            loginId: request.loginId,
+                            loginDetails: request.loginDetails
+                        }
+                    };
+                    console.log(Object.keys(loginPools[request.userId]));
+                    socketCon.send(JSON.stringify(data));
+                }
             }
         }
         con.addEventListener('message', (data) => __awaiter(void 0, void 0, void 0, function* () {
